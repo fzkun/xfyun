@@ -8,8 +8,8 @@ import (
 	"github.com/fzkun/xfyun/natural_language/config"
 	"github.com/fzkun/xfyun/natural_language/context"
 	"github.com/go-resty/resty/v2"
-	"io"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -34,10 +34,10 @@ func (n *NaturalLanguage) Emotion(text string) (err error) {
 	param["type"] = "dependent"
 	tmp, _ := json.Marshal(param)
 	base64Param := base64.StdEncoding.EncodeToString(tmp)
-	curTime := fmt.Sprintf("%d", time.Now().Unix())
-	w := md5.New()
-	io.WriteString(w, n.ctx.AppID+curTime+base64Param)
-	checksum := fmt.Sprintf("%x", w.Sum(nil))
+	curTime := strconv.FormatInt(time.Now().Unix(), 10)
+
+	//X-CheckSum
+	checksum := fmt.Sprintf("%x", md5.Sum([]byte(n.ctx.ApiKey+curTime+base64Param)))
 
 	req := resty.New().R().EnableTrace()
 	req.SetHeaders(map[string]string{
@@ -45,7 +45,6 @@ func (n *NaturalLanguage) Emotion(text string) (err error) {
 		"X-CurTime":  curTime,
 		"X-Param":    base64Param,
 		"X-CheckSum": checksum,
-		//"Content-Type": "application/x-www-form-urlencoded",
 	})
 	data := url.Values{}
 	data.Add("text", text)
