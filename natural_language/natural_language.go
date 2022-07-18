@@ -4,10 +4,14 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/fzkun/goutil/jsonutil"
 	"github.com/fzkun/xfyun/natural_language/config"
 	"github.com/fzkun/xfyun/natural_language/context"
+	"github.com/fzkun/xfyun/xfmodel"
 	"github.com/go-resty/resty/v2"
+	"github.com/tidwall/gjson"
 	"net/url"
 	"strconv"
 	"time"
@@ -26,9 +30,12 @@ func NewNaturalLanguage(cfg *config.Config) *NaturalLanguage {
 	}
 }
 
-func (n *NaturalLanguage) Emotion(text string) (err error) {
+// Emotion 情感分析 API
+//https://www.xfyun.cn/doc/nlp/emotion-analysis/API.html
+func (n *NaturalLanguage) Emotion(text string) (data xfmodel.EmotionResp, err error) {
 	var (
 		httpResp *resty.Response
+		respJson string
 	)
 	param := make(map[string]string)
 	param["type"] = "dependent"
@@ -46,12 +53,20 @@ func (n *NaturalLanguage) Emotion(text string) (err error) {
 		"X-Param":    base64Param,
 		"X-CheckSum": checksum,
 	})
-	data := url.Values{}
-	data.Add("text", text)
-	req.SetFormDataFromValues(data)
+	values := url.Values{}
+	values.Add("text", text)
+	req.SetFormDataFromValues(values)
 	if httpResp, err = req.Post("http://ltpapi.xfyun.cn/v2/sa"); err != nil {
 		return
 	}
-	fmt.Println(httpResp.String())
+	respJson = httpResp.String()
+	respCode := gjson.Get(respJson, "code").Int()
+	if respCode != 0 {
+		err = errors.New(fmt.Sprintf("xf_code=%d,xf_err=%s", respCode, gjson.Get(respJson, "desc").String()))
+		return
+	}
+	if err = jsonutil.JsonStrToStruct(gjson.Get(respJson, "data").String(), &data); err != nil {
+		return
+	}
 	return
 }
