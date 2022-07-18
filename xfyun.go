@@ -1,8 +1,9 @@
 package xfyun
 
 import (
+	naturalLanguageCfg "github.com/fzkun/xfyun/config"
+	"github.com/fzkun/xfyun/context"
 	"github.com/fzkun/xfyun/natural_language"
-	naturalLanguageCfg "github.com/fzkun/xfyun/natural_language/config"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -21,13 +22,16 @@ func init() {
 
 // XFYun 科大讯飞sdk
 type XFYun struct {
+	ctx *context.Context
 }
 
-func NewXFYun() *XFYun {
-	return &XFYun{}
+func NewXFYun(cfg *naturalLanguageCfg.Config) *XFYun {
+	return &XFYun{ctx: &context.Context{
+		Config: cfg,
+	}}
 }
 
 // GetNaturalLanguage 获取自然语言处理实例
-func (wc *XFYun) GetNaturalLanguage(cfg *naturalLanguageCfg.Config) *natural_language.NaturalLanguage {
-	return natural_language.NewNaturalLanguage(cfg)
+func (xf *XFYun) GetNaturalLanguage() *natural_language.NaturalLanguage {
+	return natural_language.NewNaturalLanguage(xf.ctx)
 }
